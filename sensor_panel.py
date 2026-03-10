@@ -4,88 +4,90 @@ import numpy as np
 from datetime import datetime
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Zeytinlik Ar-Ge | Sensör Ağı", page_icon="📡", layout="wide")
+st.set_page_config(page_title="Zeytinlik Ar-Ge | Nem & Akış Takibi", page_icon="📡", layout="wide")
 
 # --- SİSTEM AYARLARI ---
-ANA_BORU_SAYISI = 1
-DAL_SAYISI = 20
-PIL_YUZDE = 88 # Örnek sabit değer, ileride karttan gelecek
+ANA_HAT_SAYISI = 1
+AGAC_BOLGE_SAYISI = 20 # 20 farklı bölgeden nem verisi
+PIL_YUZDE = 88 
 
 # --- SIDEBAR: GÜÇ VE DURUM ---
 with st.sidebar:
     st.title("🎛️ Sistem Sağlığı")
     
-    # Pil Seviyesi Düzenlemesi
+    # Pil Seviyesi
     st.write(f"### 🔋 Batarya Durumu: %{PIL_YUZDE}")
     st.progress(PIL_YUZDE / 100)
-    if PIL_YUZDE > 20:
-        st.success("Güç Seviyesi: Yeterli")
-    else:
-        st.warning("DİKKAT: Şarj Ediniz!")
+    st.info(f"📡 Toplam Sensör: {ANA_HAT_SAYISI + AGAC_BOLGE_SAYISI} Adet")
+    st.caption(f"Son Güncelleme: {datetime.now().strftime('%H:%M:%S')}")
     
     st.divider()
-    st.info(f"📡 Toplam Sensör: {ANA_BORU_SAYISI + DAL_SAYISI} Adet")
-    st.caption(f"Son Senkronizasyon: {datetime.now().strftime('%H:%M:%S')}")
+    st.write("📍 **Konum:** İzmir / Bergama")
 
 # --- ANA EKRAN ---
-st.title("🚜 Hidrolik Akış Gözlem Merkezi")
-st.markdown("Ana boru ve bağlı 20 alt dalın anlık su geçiş kontrolü.")
+st.title("🚜 Akıllı Saha Gözlem Merkezi")
+st.markdown("Ana hat akışı ve 20 farklı bölgedeki toprak nemi durumu.")
 
 # Üst Özet Kartları
 c1, c2 = st.columns(2)
 with c1:
-    st.metric("Ana Boru Durumu", "AKKIŞ VAR", delta="120 L/dk")
+    # Ana boru akış bilgisi
+    st.metric("Ana Boru Akış Durumu", "AKKIŞ VAR" if True else "AKKIŞ YOK", delta="120 L/dk")
 with c2:
-    # Simülasyon: Rastgele 3 dalda sorun varmış gibi gösterelim
-    st.metric("Aktif Kılcal Dallar", f"{DAL_SAYISI - 3} / {DAL_SAYISI}", delta="-3 Hata", delta_color="inverse")
+    # Nem ortalaması
+    st.metric("Ortalama Toprak Nemi", "%34", delta="-%2 (Kritik)")
 
 st.divider()
 
-# --- BORU VE DAL KONTROL TABLOSU ---
-st.subheader("💧 Hat Bazlı Su Onay Sistemi")
+# --- SENSÖR VERİ TABLOSU ---
+st.subheader("💧 Saha Veri Paneli")
 
-# Verileri düzenli göstermek için bir liste oluşturuyoruz
-tabs = st.tabs(["🏗️ Ana Hat", "🌿 Kılcal Dallar (1-20)"])
+tabs = st.tabs(["🏗️ Ana Hat Kontrolü", "🌱 Toprak Nemi (20 Bölge)"])
 
 with tabs[0]:
-    # Ana Boru Kısmı
-    col_a1, col_a2, col_a3 = st.columns([1, 1, 2])
-    col_a1.write("**Hat İsmi**")
-    col_a2.write("**Su Onayı**")
-    col_a3.write("**Durum Notu**")
+    # Ana Boru Bilgi Ekranı
+    ca1, ca2, ca3 = st.columns([1, 1, 2])
+    ca1.write("**Hat İsmi**")
+    ca2.write("**Akış Onayı**")
+    ca3.write("**Sistem Mesajı**")
     
     st.divider()
     
-    ca1, ca2, ca3 = st.columns([1, 1, 2])
-    ca1.write("📍 **ANA BORU - 01**")
-    ca2.toggle("Onay", value=True, key="ana_boru")
-    ca3.write("✅ Akış Stabil - Basınç Uygun")
+    col_a1, col_a2, col_a3 = st.columns([1, 1, 2])
+    col_a1.write("📍 **ANA HAT - 01**")
+    # Bilgi kısmı: Artık kapatılabilir bir düğme değil, salt okunur bir bilgi
+    col_a2.info("✅ AKIŞ AKTİF")
+    col_a3.write("Pompa basıncı stabil, ana boru tam kapasite çalışıyor.")
 
 with tabs[1]:
-    # 20 Dalın Listelenmesi
+    # 20 Bölgenin Toprak Nem Verileri
     col_h1, col_h2, col_h3 = st.columns([1, 1, 2])
-    col_h1.write("**Dal No**")
-    col_h2.write("**Su Geçişi**")
-    col_h3.write("**Sensör Verisi**")
+    col_h1.write("**Bölge No**")
+    col_h2.write("**Nem Seviyesi**")
+    col_h3.write("**Durum Analizi**")
     st.write("---")
 
-    for i in range(1, DAL_SAYISI + 1):
+    for i in range(1, AGAC_BOLGE_SAYISI + 1):
         ch1, ch2, ch3 = st.columns([1, 1, 2])
-        ch1.write(f"🌿 Dal Hattı - {i:02d}")
+        ch1.write(f"📍 Bölge {i:02d}")
         
-        # Su Onay Butonu (Toggle)
-        # Simülasyon: İlk 17 tanesi açık, son 3 tanesi kapalı başlasın
-        is_active = True if i <= 17 else False
-        status = ch2.toggle("Su Var", value=is_active, key=f"dal_{i}")
+        # Simülasyon: Nem değerleri (Örn: %25 ile %45 arası)
+        nem_degeri = np.random.randint(25, 45)
+        ch2.write(f"**%{nem_degeri}**")
         
-        if status:
-            ch3.write("🟢 Geçiş Onaylandı (Normal)")
+        # Durum Analizi (Bilgi Paneli)
+        if nem_degeri < 30:
+            ch3.warning("⚠️ KRİTİK: Toprak kurumuş, sulama önerilir.")
         else:
-            ch3.write("🔴 **AKKIŞ YOK / TIKANIKLIK?**")
+            ch3.success("🟢 İDEAL: Nem seviyesi yeterli.")
         
-        st.write(" ") # Satır arası boşluk
+        st.write(" ") # Görsel boşluk
 
-# --- ALT BİLGİ ---
+# --- ALT AKSİYONLAR ---
 st.divider()
-if st.button("🔄 Tüm Sensörleri Yeniden Tara"):
-    st.toast("Sensör ağ taranıyor...", icon="📡")
+col_b1, col_b2 = st.columns(2)
+with col_b1:
+    if st.button("🔄 Verileri Tazele", use_container_width=True):
+        st.rerun()
+with col_b2:
+    st.button("📄 Raporu PDF Olarak İndir (Yakında)", use_container_width=True, disabled=True)
