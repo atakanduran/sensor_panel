@@ -99,4 +99,9 @@ elif sayfa == "Su Deposu ve Hidrofor":
         st.subheader("📜 Depo Doldurma Geçmişi")
         # Örnek geçmiş verisi tablosu
         gecmis_data = pd.DataFrame({
-            "Tarih": ["09.03.2026", "07
+            "Tarih": ["09.03.2026", "07.03.2026", "05.03.2026"],
+            "Miktar (Litre)": [1200, 2500, 1800],
+            "Süre": ["45 dk", "95 dk", "60 dk"],
+            "Durum": ["Tamamlandı", "Tamamlandı", "Yarıda Kesildi"]
+        })
+        st.table(gecmis_data)
