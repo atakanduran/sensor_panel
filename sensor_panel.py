@@ -4,63 +4,102 @@ import numpy as np
 from datetime import datetime
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Zeytinlik Ar-Ge | Nem & Akış Takibi", page_icon="📡", layout="wide")
+st.set_page_config(page_title="Zeytinlik Ar-Ge | Akıllı Su Yönetimi", page_icon="💧", layout="wide")
 
-# --- SİSTEM AYARLARI ---
-ANA_HAT_SAYISI = 1
-AGAC_BOLGE_SAYISI = 20 # 20 farklı bölgeden nem verisi
+# --- SİSTEM DEĞİŞKENLERİ (İleride Veritabanından Gelecek) ---
+if "depo_seviyesi" not in st.session_state:
+    st.session_state.depo_seviyesi = 65  # Başlangıçta %65 dolu
+if "hidrofor_calisiyor" not in st.session_state:
+    st.session_state.hidrofor_calisiyor = False
+
+AGAC_BOLGE_SAYISI = 20
 PIL_YUZDE = 88 
 
-# --- SIDEBAR: GÜÇ VE DURUM ---
+# --- SIDEBAR: KONTROL VE DURUM ---
 with st.sidebar:
     st.title("🎛️ Sistem Sağlığı")
+    
+    # Konum Bilgisi
+    st.info("📍 **Konum:** İzmir / Bergama")
     
     # Pil Seviyesi
     st.write(f"### 🔋 Batarya Durumu: %{PIL_YUZDE}")
     st.progress(PIL_YUZDE / 100)
-    st.info(f"📡 Toplam Sensör: {ANA_HAT_SAYISI + AGAC_BOLGE_SAYISI} Adet")
-    st.caption(f"Son Güncelleme: {datetime.now().strftime('%H:%M:%S')}")
     
     st.divider()
-    st.write("📍 **Konum:** İzmir / Bergama")
+    
+    # Toplam Sensör Bilgisi
+    st.write(f"📡 **Toplam Sensör:** {AGAC_BOLGE_SAYISI + 1} Adet")
+    
+    # DEPO GÖSTERGESİ (Görselleştirilmiş)
+    st.write("### 💧 Su Deposu Seviyesi")
+    # Depo doluluk oranına göre renk değiştirme
+    depo_renk = "green" if st.session_state.depo_seviyesi > 30 else "red"
+    st.subheader(f":{depo_renk}[%{st.session_state.depo_seviyesi}]")
+    st.progress(st.session_state.depo_seviyesi / 100)
+    st.caption("5000 Litrelik Ana Depo")
+
+    st.divider()
+
+    # HİDROFOR KONTROLÜ (Yeraltı Suyu Çekme)
+    st.write("### ⚙️ Hidrofor Kontrolü")
+    if st.session_state.hidrofor_calisiyor:
+        st.warning("⚡ Hidrofor Çalışıyor: Su Çekiliyor...")
+        if st.button("🔴 HİDROFORU DURDUR", use_container_width=True):
+            st.session_state.hidrofor_calisiyor = False
+            st.rerun()
+    else:
+        st.success("💤 Hidrofor Beklemede")
+        if st.button("🟢 HİDROFORU BAŞLAT", use_container_width=True):
+            st.session_state.hidrofor_calisiyor = True
+            st.rerun()
+    
+    st.divider()
+    st.caption(f"Son Veri Akışı: {datetime.now().strftime('%H:%M:%S')}")
 
 # --- ANA EKRAN ---
 st.title("🚜 Akıllı Saha Gözlem Merkezi")
-st.markdown("Ana hat akışı ve 20 farklı bölgedeki toprak nemi durumu.")
+st.markdown("Ana hat akışı, depo yönetimi ve 20 bölgedeki toprak nemi durumu.")
 
 # Üst Özet Kartları
-c1, c2 = st.columns(2)
+c1, c2, c3 = st.columns(3)
 with c1:
-    # Ana boru akış bilgisi
-    st.metric("Ana Boru Akış Durumu", "AKKIŞ VAR" if True else "AKKIŞ YOK", delta="120 L/dk")
+    st.metric("Ana Boru Durumu", "AKIŞ VAR", delta="120 L/dk")
 with c2:
-    # Nem ortalaması
-    st.metric("Ortalama Toprak Nemi", "%34", delta="-%2 (Kritik)")
+    st.metric("Ortalama Nem", "%34", delta="-%2", delta_color="inverse")
+with c3:
+    status_text = "ÇALIŞIYOR" if st.session_state.hidrofor_calisiyor else "KAPALI"
+    st.metric("Hidrofor Durumu", status_text)
 
 st.divider()
 
 # --- SENSÖR VERİ TABLOSU ---
-st.subheader("💧 Saha Veri Paneli")
-
-tabs = st.tabs(["🏗️ Ana Hat Kontrolü", "🌱 Toprak Nemi (20 Bölge)"])
+tabs = st.tabs(["🏗️ Hat ve Depo Analizi", "🌱 Toprak Nemi (20 Bölge)"])
 
 with tabs[0]:
-    # Ana Boru Bilgi Ekranı
-    ca1, ca2, ca3 = st.columns([1, 1, 2])
-    ca1.write("**Hat İsmi**")
-    ca2.write("**Akış Onayı**")
-    ca3.write("**Sistem Mesajı**")
-    
+    col_a1, col_a2, col_a3 = st.columns([1, 1, 2])
+    col_a1.write("**Birim**")
+    col_a2.write("**Durum**")
+    col_a3.write("**Sistem Mesajı**")
     st.divider()
     
-    col_a1, col_a2, col_a3 = st.columns([1, 1, 2])
-    col_a1.write("📍 **ANA HAT - 01**")
-    # Bilgi kısmı: Artık kapatılabilir bir düğme değil, salt okunur bir bilgi
-    col_a2.info("✅ AKIŞ AKTİF")
-    col_a3.write("Pompa basıncı stabil, ana boru tam kapasite çalışıyor.")
+    # Ana Hat Bilgisi
+    row1_c1, row1_c2, row1_c3 = st.columns([1, 1, 2])
+    row1_c1.write("📍 **ANA HAT - 01**")
+    row1_c2.info("✅ AKIŞ AKTİF")
+    row1_c3.write("Basınç dengeli, filtreler temiz.")
+
+    # Depo Bilgisi
+    row2_c1, row2_c2, row2_c3 = st.columns([1, 1, 2])
+    row2_c1.write("💧 **ANA DEPO**")
+    if st.session_state.depo_seviyesi < 20:
+        row2_c2.error("❌ SEVİYE DÜŞÜK")
+    else:
+        row2_c2.success("✅ SEVİYE YETERLİ")
+    row2_c3.write(f"Mevcut miktar: {5000 * (st.session_state.depo_seviyesi/100):.0f} Litre")
 
 with tabs[1]:
-    # 20 Bölgenin Toprak Nem Verileri
+    # 20 Bölge Nem Verileri
     col_h1, col_h2, col_h3 = st.columns([1, 1, 2])
     col_h1.write("**Bölge No**")
     col_h2.write("**Nem Seviyesi**")
@@ -70,24 +109,10 @@ with tabs[1]:
     for i in range(1, AGAC_BOLGE_SAYISI + 1):
         ch1, ch2, ch3 = st.columns([1, 1, 2])
         ch1.write(f"📍 Bölge {i:02d}")
-        
-        # Simülasyon: Nem değerleri (Örn: %25 ile %45 arası)
-        nem_degeri = np.random.randint(25, 45)
+        nem_degeri = np.random.randint(25, 45) # Simülasyon verisi
         ch2.write(f"**%{nem_degeri}**")
         
-        # Durum Analizi (Bilgi Paneli)
         if nem_degeri < 30:
-            ch3.warning("⚠️ KRİTİK: Toprak kurumuş, sulama önerilir.")
+            ch3.warning("⚠️ KRİTİK: Sulama önerilir.")
         else:
-            ch3.success("🟢 İDEAL: Nem seviyesi yeterli.")
-        
-        st.write(" ") # Görsel boşluk
-
-# --- ALT AKSİYONLAR ---
-st.divider()
-col_b1, col_b2 = st.columns(2)
-with col_b1:
-    if st.button("🔄 Verileri Tazele", use_container_width=True):
-        st.rerun()
-with col_b2:
-    st.button("📄 Raporu PDF Olarak İndir (Yakında)", use_container_width=True, disabled=True)
+            ch3.success("🟢 İDEAL: Nem yeterli.")
