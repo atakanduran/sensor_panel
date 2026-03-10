@@ -1,60 +1,91 @@
 import streamlit as st
 import pandas as pd
-import time
+import numpy as np
 from datetime import datetime
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Zeytinlik Sensör Ağı", page_icon="📡", layout="wide")
+st.set_page_config(page_title="Zeytinlik Ar-Ge | Sensör Ağı", page_icon="📡", layout="wide")
 
-# --- GERÇEK VERİ ALTYAPISI (TASLAK) ---
-# Burası ileride tarladaki ESP32'den gelen verileri okuyacak olan kısımdır.
-def read_real_sensors():
-    # Şimdilik simülasyon devam ediyor ama yapı gerçek veriye hazır
-    return {
-        "nemi": 32.5,  # Toprak nemi
-        "akıs": 120.0, # Borudan geçen su litresi
-        "pil": 85      # Kartın güneş enerjisi pil seviyesi
-    }
+# --- SİSTEM AYARLARI ---
+ANA_BORU_SAYISI = 1
+DAL_SAYISI = 20
+PIL_YUZDE = 88 # Örnek sabit değer, ileride karttan gelecek
 
-# --- SIDEBAR: KART DURUMU ---
+# --- SIDEBAR: GÜÇ VE DURUM ---
 with st.sidebar:
-    st.title("🎛️ Cihaz Durumu")
-    st.success("ESP32-S3: Bağlı ✅")
-    st.info("Sinyal Gücü: -65 dBm (Güçlü)")
-    st.progress(85, text="🔋 Pil Seviyesi")
+    st.title("🎛️ Sistem Sağlığı")
+    
+    # Pil Seviyesi Düzenlemesi
+    st.write(f"### 🔋 Batarya Durumu: %{PIL_YUZDE}")
+    st.progress(PIL_YUZDE / 100)
+    if PIL_YUZDE > 20:
+        st.success("Güç Seviyesi: Yeterli")
+    else:
+        st.warning("DİKKAT: Şarj Ediniz!")
+    
+    st.divider()
+    st.info(f"📡 Toplam Sensör: {ANA_BORU_SAYISI + DAL_SAYISI} Adet")
+    st.caption(f"Son Senkronizasyon: {datetime.now().strftime('%H:%M:%S')}")
 
-# --- ANA PANEL ---
-st.title("🚜 Akıllı Saha Gözlem Merkezi")
+# --- ANA EKRAN ---
+st.title("🚜 Hidrolik Akış Gözlem Merkezi")
+st.markdown("Ana boru ve bağlı 20 alt dalın anlık su geçiş kontrolü.")
 
-c1, c2, c3 = st.columns(3)
-data = read_real_sensors()
-
+# Üst Özet Kartları
+c1, c2 = st.columns(2)
 with c1:
-    st.metric("Toprak Nemi", f"%{data['nemi']}", delta="-%2")
+    st.metric("Ana Boru Durumu", "AKKIŞ VAR", delta="120 L/dk")
 with c2:
-    st.metric("Anlık Akış", f"{data['akıs']} L/dk", delta="Sabit")
-with c3:
-    st.metric("Sistem Voltajı", "3.7V", help="Lipo Pil Voltajı")
+    # Simülasyon: Rastgele 3 dalda sorun varmış gibi gösterelim
+    st.metric("Aktif Kılcal Dallar", f"{DAL_SAYISI - 3} / {DAL_SAYISI}", delta="-3 Hata", delta_color="inverse")
 
 st.divider()
 
-# Grafik ve Log Ekranı
-col_sol, col_sag = st.columns([2, 1])
+# --- BORU VE DAL KONTROL TABLOSU ---
+st.subheader("💧 Hat Bazlı Su Onay Sistemi")
 
-with col_sol:
-    st.subheader("📈 Kritik Parametre Analizi")
-    # Burada sensörlerden gelen geçmiş veriyi listeleyeceğiz
-    st.line_chart({"Nem": [35, 34, 33, 32, 32.5]})
+# Verileri düzenli göstermek için bir liste oluşturuyoruz
+tabs = st.tabs(["🏗️ Ana Hat", "🌿 Kılcal Dallar (1-20)"])
 
-with col_sag:
-    st.subheader("📜 Sistem Kayıtları (Log)")
-    st.code(f"""
-    [{datetime.now().strftime('%H:%M')}] Vana-1 açıldı.
-    [{datetime.now().strftime('%H:%M')}] Veri sunucuya iletildi.
-    [{datetime.now().strftime('%H:%M')}] Sensör kalibrasyonu OK.
-    """, language="text")
+with tabs[0]:
+    # Ana Boru Kısmı
+    col_a1, col_a2, col_a3 = st.columns([1, 1, 2])
+    col_a1.write("**Hat İsmi**")
+    col_a2.write("**Su Onayı**")
+    col_a3.write("**Durum Notu**")
+    
+    st.divider()
+    
+    ca1, ca2, ca3 = st.columns([1, 1, 2])
+    ca1.write("📍 **ANA BORU - 01**")
+    ca2.toggle("Onay", value=True, key="ana_boru")
+    ca3.write("✅ Akış Stabil - Basınç Uygun")
 
-# --- KRİTİK BUTONLAR ---
+with tabs[1]:
+    # 20 Dalın Listelenmesi
+    col_h1, col_h2, col_h3 = st.columns([1, 1, 2])
+    col_h1.write("**Dal No**")
+    col_h2.write("**Su Geçişi**")
+    col_h3.write("**Sensör Verisi**")
+    st.write("---")
+
+    for i in range(1, DAL_SAYISI + 1):
+        ch1, ch2, ch3 = st.columns([1, 1, 2])
+        ch1.write(f"🌿 Dal Hattı - {i:02d}")
+        
+        # Su Onay Butonu (Toggle)
+        # Simülasyon: İlk 17 tanesi açık, son 3 tanesi kapalı başlasın
+        is_active = True if i <= 17 else False
+        status = ch2.toggle("Su Var", value=is_active, key=f"dal_{i}")
+        
+        if status:
+            ch3.write("🟢 Geçiş Onaylandı (Normal)")
+        else:
+            ch3.write("🔴 **AKKIŞ YOK / TIKANIKLIK?**")
+        
+        st.write(" ") # Satır arası boşluk
+
+# --- ALT BİLGİ ---
 st.divider()
-if st.button("🚨 SİSTEMİ RESETLE", use_container_width=True):
-    st.warning("Uzak sunucudaki karta reset sinyali gönderiliyor...")
+if st.button("🔄 Tüm Sensörleri Yeniden Tara"):
+    st.toast("Sensör ağ taranıyor...", icon="📡")
