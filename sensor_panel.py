@@ -17,7 +17,7 @@ def send_telegram_msg(mesaj):
         params = {"chat_id": chat_id, "text": mesaj}
         response = requests.get(url, params=params)
         
-        # Eğer hata varsa ekranda göster (Hata ayıklama için)
+        # Eğer hata varsa ekranda göster
         if response.status_code != 200:
             st.error(f"Telegram Hatası: {response.text}")
         else:
@@ -31,9 +31,9 @@ if "depo_seviyesi" not in st.session_state:
 if "hidrofor_calisiyor" not in st.session_state:
     st.session_state.hidrofor_calisiyor = False
 
-# Simülasyon Pil Değerleri (Kartlar için)
+# Simülasyon Pil Değerleri
 KART1_PIL = 85
-KART2_PIL = 9 # Test için %10'un altında (Kritik)
+KART2_PIL = 9 # %10'un altında olduğu için uyarı verecek
 
 # --- SOL MENÜ (SIDEBAR) ---
 with st.sidebar:
@@ -50,11 +50,10 @@ with st.sidebar:
     st.divider()
     st.caption(f"Sistem Saati: {datetime.now().strftime('%H:%M')}")
 
-# --- 1. SAYFA: ÇİFTLİK GÖZLEM MERKEZİ (KART-1) ---
+# --- 1. SAYFA: ÇİFTLİK GÖZLEM MERKEZİ ---
 if sayfa == "Çiftlik Gözlem Merkezi":
     st.title("🛰️ Çiftlik Gözlem Merkezi (Kart-1)")
     
-    # Kart-1 Durum Metrikleri
     col_k1_1, col_k1_2, col_k1_3 = st.columns(3)
     with col_k1_1:
         pil_renk1 = "normal" if KART1_PIL > 10 else "inverse"
@@ -63,14 +62,11 @@ if sayfa == "Çiftlik Gözlem Merkezi":
     with col_k1_2:
         st.metric("Ana Hat Akışı", "120 L/dk", delta="Stabil")
     with col_k1_3:
-        st.metric("Aktif Sensör", "21/21", delta="Tam Kapasite")
+        st.metric("Aktif Sensör", "21/21")
 
     st.divider()
-    
     st.subheader("🌱 Bölgesel Toprak Nemi Haritası")
-    st.write("20 bölgedeki sensörlerden gelen anlık nem verileri:")
     
-    # Nem Verilerini 4 Sütunda Listeleme
     nem_cols = st.columns(4)
     for i in range(1, 21):
         col_index = (i-1) % 4
@@ -79,12 +75,30 @@ if sayfa == "Çiftlik Gözlem Merkezi":
             status_icon = "🟢" if nem_v >= 30 else "🔴"
             st.write(f"{status_icon} **Bölge {i:02d}:** %{nem_v}")
 
-# --- 2. SAYFA: SU DEPOSU VE HİDROFOR (KART-2) ---
+# --- 2. SAYFA: SU DEPOSU VE HİDROFOR ---
 elif sayfa == "Su Deposu ve Hidrofor":
     st.title("💧 Su Deposu ve Hidrofor Kontrolü (Kart-2)")
     
-    # Kart-2 Durum Metrikleri
     col_k2_1, col_k2_2, col_k2_3 = st.columns(3)
     with col_k2_1:
         pil_renk2 = "normal" if KART2_PIL > 10 else "inverse"
-        st
+        st.metric("Kart-2 Batarya", f"%{KART2_PIL}", delta="KRİTİK" if KART2_PIL <= 10 else "Normal", delta_color=pil_renk2)
+        st.progress(KART2_PIL / 100)
+        if KART2_PIL <= 10:
+            st.toast("🚨 Kart-2 Pil Seviyesi Kritik!", icon="⚠️")
+            
+    with col_k2_2:
+        depo_durum = "YETERLİ" if st.session_state.depo_seviyesi > 25 else "DÜŞÜK"
+        st.metric("Depo Seviyesi", f"%{st.session_state.depo_seviyesi}", delta=depo_durum)
+    with col_k2_3:
+        h_text = "ÇALIŞIYOR" if st.session_state.hidrofor_calisiyor else "KAPALI"
+        st.metric("Hidrofor Durumu", h_text)
+
+    st.divider()
+
+    c_sol, c_sag = st.columns([1, 2])
+    
+    with c_sol:
+        st.subheader("💧 Depo Seviyesi")
+        # Dikey Su Deposu Göstergesi
+        st.markdown(f"""
