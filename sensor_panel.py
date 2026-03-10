@@ -18,7 +18,6 @@ with st.sidebar:
     st.info("📍 **Konum:** İzmir / Bergama")
     st.divider()
     
-    # MODÜL SEÇİMİ (Radyo Buton ile Sayfa Değiştirme)
     st.write("### 🖥️ Ekran Seçimi")
     sayfa = st.radio(
         "Görüntülemek istediğiniz merkezi seçin:",
@@ -28,11 +27,10 @@ with st.sidebar:
     st.divider()
     st.caption(f"Sistem Saati: {datetime.now().strftime('%H:%M')}")
 
-# --- 1. SAYFA: ÇİFTLİK GÖZLEM MERKEZİ (KART-1) ---
+# --- 1. SAYFA: ÇİFTLİK GÖZLEM MERKEZİ ---
 if sayfa == "Çiftlik Gözlem Merkezi":
     st.title("🛰️ Çiftlik Gözlem Merkezi (Kart-1)")
     
-    # Kart-1 Üst Bilgi Alanı
     col_k1_1, col_k1_2, col_k1_3 = st.columns(3)
     with col_k1_1:
         st.metric("Kart-1 Batarya", "%88", delta="Güneşli")
@@ -43,11 +41,8 @@ if sayfa == "Çiftlik Gözlem Merkezi":
         st.metric("Aktif Sensör", "21/21", delta="Tam Kapasite")
 
     st.divider()
-    
     st.subheader("🌱 Bölgesel Toprak Nemi Haritası")
-    st.write("20 farklı noktadaki sensörlerden gelen anlık nem verileri:")
     
-    # Nem Verilerini 4 Sütunda Gösterelim (Daha derli toplu)
     nem_cols = st.columns(4)
     for i in range(1, 21):
         col_index = (i-1) % 4
@@ -56,7 +51,7 @@ if sayfa == "Çiftlik Gözlem Merkezi":
             status = "🟢" if nem_degeri >= 30 else "🔴"
             st.write(f"{status} **Bölge {i:02d}:** %{nem_degeri}")
 
-# --- 2. SAYFA: SU DEPOSU VE HİDROFOR (KART-2) ---
+# --- 2. SAYFA: SU DEPOSU VE HİDROFOR ---
 elif sayfa == "Su Deposu ve Hidrofor":
     st.title("💧 Su Deposu ve Hidrofor Kontrolü (Kart-2)")
     
@@ -69,24 +64,28 @@ elif sayfa == "Su Deposu ve Hidrofor":
         st.metric("Depo Seviyesi", f"%{st.session_state.depo_seviyesi}", delta=depo_durum)
     with col_k2_3:
         h_text = "ÇALIŞIYOR" if st.session_state.hidrofor_calisiyor else "KAPALI"
-        st.metric("Hidrofor Durumu", h_text)
+        st.metric("Hidrofor Statüsü", h_text)
 
     st.divider()
 
-    # Depo Görselleştirme ve Pompa Kontrolü
-    c_sol, c_sag = st.columns([1, 1])
+    c_sol, c_sag = st.columns([1, 2])
     
     with c_sol:
         st.subheader("💧 Depo Durum Analizi")
-        st.write(f"Mevcut Miktar: **{5000 * (st.session_state.depo_seviyesi/100):.0f} Litre**")
-        st.progress(st.session_state.depo_seviyesi / 100)
-        st.image("https://img.icons8.com/clouds/200/water-tank.png", width=150) # Temsili depo iconu
+        # DİKEY DEPO GÖSTERGESİ (HTML/CSS ile dik hale getirdik)
+        st.write(f"Mevcut: **%{st.session_state.depo_seviyesi}**")
+        st.markdown(f"""
+            <div style="background-color: #e0e0e0; border-radius: 10px; width: 60px; height: 250px; position: relative; margin: auto; border: 2px solid #555;">
+                <div style="background-color: #2196F3; width: 100%; height: {st.session_state.depo_seviyesi}%; position: absolute; bottom: 0; border-radius: 0 0 8px 8px; transition: height 0.5s;">
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 10px;">5000L Depo</p>
+        """, unsafe_allow_html=True)
 
     with c_sag:
         st.subheader("⚙️ Hidrofor Operasyonu")
         if st.session_state.hidrofor_calisiyor:
             st.error("⚡ HİDROFOR ŞU AN AKTİF")
-            st.info("Yeraltı suyu çekilerek ana depoya aktarılıyor.")
             if st.button("🔴 HİDROFORU DURDUR", use_container_width=True):
                 st.session_state.hidrofor_calisiyor = False
                 st.rerun()
@@ -95,7 +94,9 @@ elif sayfa == "Su Deposu ve Hidrofor":
             if st.button("🟢 HİDROFORU BAŞLAT", use_container_width=True):
                 st.session_state.hidrofor_calisiyor = True
                 st.rerun()
-
-    st.divider()
-    st.subheader("📊 Depo Dolum Geçmişi")
-    st.line_chart([55, 58, 62, 65, 65]) # Örnek dolum grafiği
+        
+        st.divider()
+        st.subheader("📜 Depo Doldurma Geçmişi")
+        # Örnek geçmiş verisi tablosu
+        gecmis_data = pd.DataFrame({
+            "Tarih": ["09.03.2026", "07
