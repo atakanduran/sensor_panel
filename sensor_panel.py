@@ -10,22 +10,29 @@ st.set_page_config(page_title="Zeytinlik Kontrol Merkezi", page_icon="🚜", lay
 # --- TELEGRAM MESAJ FONKSİYONU ---
 def send_telegram_msg(mesaj):
     try:
-        # Secrets'tan bilgileri çekiyoruz
+        # Secrets kontrolü (Hata ayıklama mesajlı)
+        if "TELEGRAM_TOKEN" not in st.secrets or "CHAT_ID" not in st.secrets:
+            st.error("❌ HATA: Secrets kısmında TOKEN veya ID bulunamadı!")
+            return
+
         token = st.secrets["TELEGRAM_TOKEN"]
         chat_id = st.secrets["CHAT_ID"]
+        
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         params = {"chat_id": chat_id, "text": mesaj}
-        response = requests.get(url, params=params)
         
-        # Eğer hata varsa ekranda göster
-        if response.status_code != 200:
-            st.error(f"Telegram Hatası: {response.text}")
-        else:
+        # Zaman aşımı ekleyerek isteği gönderelim
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
             st.toast("Telegram mesajı başarıyla gönderildi! ✅")
+        else:
+            # Telegram'dan dönen gerçek hatayı ekrana basalım
+            st.error(f"Telegram Sunucu Hatası: {response.status_code} - {response.text}")
+            
     except Exception as e:
-        st.error(f"Bağlantı Hatası: {e} - Lütfen Secrets ayarlarını kontrol edin.")
-
-# --- SİSTEM DEĞİŞKENLERİ ---
+        st.error(f"⚠️ Bağlantı Hatası: {str(e)}")
+        # --- SİSTEM DEĞİŞKENLERİ ---
 if "depo_seviyesi" not in st.session_state:
     st.session_state.depo_seviyesi = 65
 if "hidrofor_calisiyor" not in st.session_state:
