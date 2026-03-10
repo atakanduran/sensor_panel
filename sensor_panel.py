@@ -102,3 +102,33 @@ elif sayfa == "Su Deposu ve Hidrofor":
         st.subheader("💧 Depo Seviyesi")
         # Dikey Su Deposu Göstergesi
         st.markdown(f"""
+            <div style="background-color: #f0f0f0; border: 2px solid #555; border-radius: 10px; width: 70px; height: 250px; position: relative; margin: auto;">
+                <div style="background-color: #2196F3; width: 100%; height: {st.session_state.depo_seviyesi}%; position: absolute; bottom: 0; border-radius: 0 0 8px 8px; transition: height 0.5s;">
+                </div>
+            </div>
+            <p style="text-align: center; font-weight: bold; margin-top: 10px;">%{st.session_state.depo_seviyesi}<br>5000L Depo</p>
+        """, unsafe_allow_html=True)
+
+    with c_sag:
+        st.subheader("⚙️ Hidrofor Operasyonu")
+        if st.session_state.hidrofor_calisiyor:
+            st.error("⚡ HİDROFOR ŞU AN AKTİF")
+            if st.button("🔴 HİDROFORU DURDUR", use_container_width=True):
+                st.session_state.hidrofor_calisiyor = False
+                send_telegram_msg("✅ Bilgi: Hidrofor durduruldu. Depo dolumu tamamlandı.")
+                st.rerun()
+        else:
+            st.success("💤 HİDROFOR BEKLEMEDE")
+            if st.button("🟢 HİDROFORU BAŞLAT", use_container_width=True):
+                st.session_state.hidrofor_calisiyor = True
+                send_telegram_msg("⚡ Uyarı: Hidrofor başlatıldı! Yeraltı suyu çekiliyor.")
+                st.rerun()
+        
+        st.divider()
+        st.subheader("📜 Doldurma Geçmişi")
+        gecmis_data = pd.DataFrame({
+            "Tarih": ["09.03.2026", "07.03.2026"],
+            "Miktar": ["1200 Litre", "2500 Litre"],
+            "Durum": ["Tamamlandı", "Tamamlandı"]
+        })
+        st.table(gecmis_data)
